@@ -74,7 +74,9 @@ ENTITY loop_filter IS
 		NCO_W 			: NATURAL := 32;
 		ERR_W 			: NATURAL := 16;
 		GAIN_W  		: NATURAL := 16;
-		INVERT_FADJ 	: BOOLEAN := False
+		INVERT_FADJ 	: BOOLEAN := False;
+		MAX_ACC_POS 	: SIGNED  := SHIFT_LEFT(to_signed(1,NCO_W), NCO_W-2);
+		MAX_ACC_NEG 	: SIGNED  := SHIFT_LEFT(to_signed(1,NCO_W), NCO_W-1)
 	);
 	PORT (
 		clk 			: IN  std_logic;
@@ -105,6 +107,8 @@ END ENTITY loop_filter;
 
 ARCHITECTURE rtl OF loop_filter IS 
 
+	SIGNAL i_sum : signed(NCO_W -1 DOWNTO 0);
+	SIGNAL i_sat : signed(NCO_W -1 DOWNTO 0);
 	SIGNAL i_acc : signed(NCO_W -1 DOWNTO 0);
 	SIGNAL i_val : signed(NCO_W -1 DOWNTO 0);
 	SIGNAL p_val : signed(ERR_W -1 DOWNTO 0);
@@ -124,6 +128,12 @@ BEGIN
 ------------------------------------------------------------------------------------------------------
 -- Integral Arm
 
+	i_sum <= i_acc + resize(signed(lpf_err), NCO_W);
+
+	i_sat <= MAX_ACC_POS WHEN i_sum(NCO_W -1) = '0' AND i_sum(NCO_W -2) = '1' ELSE
+			 MAX_ACC_POS WHEN i_sum(NCO_W -1) = '1' AND i_sum(NCO_W -2) = '0' ELSE
+			 i_sum;
+
 	integral_proc : PROCESS (clk)
 	BEGIN
 		IF clk'EVENT AND clk = '1' THEN
@@ -133,7 +143,7 @@ BEGIN
 				lpf_err_valid_d <= lpf_err_valid;
 
 				IF lpf_err_valid = '1' AND lpf_freeze = '0' THEN
-					i_acc <= i_acc + resize(signed(lpf_err), NCO_W);
+					i_acc <= i_sat;
 					i_val <= resize(shift_right(i_acc * signed(lpf_i_gain), 8), NCO_W);
 				END IF;
 
