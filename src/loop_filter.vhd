@@ -80,6 +80,8 @@ ENTITY loop_filter IS
 		clk 			: IN  std_logic;
 		init 			: IN  std_logic;
 
+		enable 			: IN  std_logic;
+
 		lpf_p_gain 		: IN  std_logic_vector(GAIN_W -1 DOWNTO 0);
 		lpf_i_gain 		: IN  std_logic_vector(GAIN_W -1 DOWNTO 0);
 		lpf_freeze 	 	: IN  std_logic;
@@ -126,16 +128,20 @@ BEGIN
 	BEGIN
 		IF clk'EVENT AND clk = '1' THEN
 
-			lpf_err_valid_d <= lpf_err_valid;
+			IF enable = '1' THEN
 
-			IF lpf_err_valid = '1' AND lpf_freeze = '0' THEN
-				i_acc <= i_acc + resize(signed(lpf_err), NCO_W);
-				i_val <= resize(shift_right(i_acc * signed(lpf_i_gain), 8), NCO_W);
-			END IF;
+				lpf_err_valid_d <= lpf_err_valid;
 
-			IF lpf_zero = '1' OR init = '1' THEN
-				i_acc <= (OTHERS => '0');
-				i_val <= (OTHERS => '0');
+				IF lpf_err_valid = '1' AND lpf_freeze = '0' THEN
+					i_acc <= i_acc + resize(signed(lpf_err), NCO_W);
+					i_val <= resize(shift_right(i_acc * signed(lpf_i_gain), 8), NCO_W);
+				END IF;
+
+				IF lpf_zero = '1' OR init = '1' THEN
+					i_acc <= (OTHERS => '0');
+					i_val <= (OTHERS => '0');
+				END IF;
+
 			END IF;
 
 			IF init = '1' THEN
@@ -146,6 +152,7 @@ BEGIN
 
 		END IF;
 	END PROCESS integral_proc;
+
 
 ------------------------------------------------------------------------------------------------------
 --  __   __   __   __   __   __  ___    __                        __       
@@ -159,8 +166,12 @@ BEGIN
 	BEGIN
 		IF clk'EVENT AND clk = '1' THEN
 
-			IF lpf_err_valid = '1' THEN
-				p_val <= resize(shift_right(signed(lpf_p_gain) * signed(lpf_err), 4), ERR_W);
+			IF enable = '1' THEN
+
+				IF lpf_err_valid = '1' THEN
+					p_val <= resize(shift_right(signed(lpf_p_gain) * signed(lpf_err), 4), ERR_W);
+				END IF;
+
 			END IF;
 
 			IF init = '1' THEN
@@ -183,15 +194,19 @@ BEGIN
 	BEGIN
 		IF clk'EVENT AND clk = '1' THEN
 
-			IF lpf_err_valid_d = '1' THEN
-				IF INVERT_FADJ THEN
-					lpf_adjust <= std_logic_vector(NOT (p_val + i_val) + 1);
+			IF enable = '1' THEN
+
+				IF lpf_err_valid_d = '1' THEN
+					IF INVERT_FADJ THEN
+						lpf_adjust <= std_logic_vector(NOT (p_val + i_val) + 1);
+					ELSE
+						lpf_adjust <= std_logic_vector(p_val + i_val);
+					END IF;
+					lpf_adj_valid <= '1';
 				ELSE
-					lpf_adjust <= std_logic_vector(p_val + i_val);
+					lpf_adj_valid <= '0';
 				END IF;
-				lpf_adj_valid <= '1';
-			ELSE
-				lpf_adj_valid <= '0';
+
 			END IF;
 
 			IF init = '1' THEN
