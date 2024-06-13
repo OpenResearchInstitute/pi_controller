@@ -69,7 +69,7 @@ USE ieee.numeric_std.ALL;
 ------------------------------------------------------------------------------------------------------
 -- Entity
 
-ENTITY loop_filter IS 
+ENTITY pi_controller IS 
 	GENERIC (
 		NCO_W 			: NATURAL := 32;
 		ERR_W 			: NATURAL := 16;
@@ -95,7 +95,7 @@ ENTITY loop_filter IS
 		lpf_adj_valid   : OUT std_logic;
 		lpf_adjust		: OUT std_logic_vector(NCO_W -1 DOWNTO 0)
 	);
-END ENTITY loop_filter;
+END ENTITY pi_controller;
 
 
 ------------------------------------------------------------------------------------------------------
@@ -105,7 +105,7 @@ END ENTITY loop_filter;
 ------------------------------------------------------------------------------------------------------
 -- Architecture
 
-ARCHITECTURE rtl OF loop_filter IS 
+ARCHITECTURE rtl OF pi_controller IS 
 
 	SIGNAL i_sum : signed(NCO_W -1 DOWNTO 0);
 	SIGNAL i_sat : signed(NCO_W -1 DOWNTO 0);
