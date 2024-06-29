@@ -72,11 +72,11 @@ USE ieee.numeric_std.ALL;
 ENTITY pi_controller IS 
 	GENERIC (
 		NCO_W 			: NATURAL := 32;
+		ACC_W 			: NATURAL := 32;
 		ERR_W 			: NATURAL := 16;
 		GAIN_W  		: NATURAL := 16;
 		INVERT_FADJ 	: BOOLEAN := False;
-		MAX_ACC_POS 	: SIGNED  := SHIFT_LEFT(to_signed(1,NCO_W), NCO_W-2);
-		MAX_ACC_NEG 	: SIGNED  := SHIFT_LEFT(to_signed(1,NCO_W), NCO_W-1)
+		ASSERT_ENA 		: BOOLEAN := False
 	);
 	PORT (
 		clk 			: IN  std_logic;
@@ -107,9 +107,12 @@ END ENTITY pi_controller;
 
 ARCHITECTURE rtl OF pi_controller IS 
 
-	SIGNAL i_sum : signed(NCO_W -1 DOWNTO 0);
-	SIGNAL i_sat : signed(NCO_W -1 DOWNTO 0);
-	SIGNAL i_acc : signed(NCO_W -1 DOWNTO 0);
+	CONSTANT MAX_ACC_POS 	: SIGNED  := SHIFT_LEFT(to_signed(1,ACC_W), ACC_W-2);
+	CONSTANT MAX_ACC_NEG 	: SIGNED  := SHIFT_LEFT(to_signed(3,ACC_W), ACC_W-2);
+
+	SIGNAL i_sum : signed(ACC_W -1 DOWNTO 0);
+	SIGNAL i_sat : signed(ACC_W -1 DOWNTO 0);
+	SIGNAL i_acc : signed(ACC_W -1 DOWNTO 0);
 	SIGNAL i_val : signed(NCO_W -1 DOWNTO 0);
 	SIGNAL p_val : signed(ERR_W -1 DOWNTO 0);
 
@@ -128,11 +131,26 @@ BEGIN
 ------------------------------------------------------------------------------------------------------
 -- Integral Arm
 
-	i_sum <= i_acc + resize(signed(lpf_err), NCO_W);
+	i_sum <= i_acc + resize(signed(lpf_err), ACC_W);
 
-	i_sat <= MAX_ACC_POS WHEN i_sum(NCO_W -1) = '0' AND i_sum(NCO_W -2) = '1' ELSE
-			 MAX_ACC_POS WHEN i_sum(NCO_W -1) = '1' AND i_sum(NCO_W -2) = '0' ELSE
+	i_sat <= MAX_ACC_POS WHEN i_sum(ACC_W -1) = '0' AND i_sum(ACC_W -2) = '1' ELSE
+			 MAX_ACC_NEG WHEN i_sum(ACC_W -1) = '1' AND i_sum(ACC_W -2) = '0' ELSE
 			 i_sum;
+
+
+    assert_gen : IF ASSERT_ENA GENERATE
+		assert_proc : PROCESS (clk)
+		BEGIN
+			IF clk'EVENT AND clk = '1' THEN
+				ASSERT i_sum = i_sat 
+					REPORT "PI Accumulator saturated - SUM: " & 
+						to_hex_string(i_sum) &
+						"; SAT: " & to_hex_string(i_sat)
+					SEVERITY Warning;
+			END IF;
+		END PROCESS assert_proc;
+	END GENERATE assert_gen;
+
 
 	integral_proc : PROCESS (clk)
 	BEGIN
