@@ -137,7 +137,7 @@ BEGIN
 			 MAX_ACC_NEG WHEN i_sum(ACC_W -1) = '1' AND i_sum(ACC_W -2) = '0' ELSE
 			 i_sum;
 
-
+	-- synthesis translate_off
     assert_gen : IF ASSERT_ENA GENERATE
 		assert_proc : PROCESS (clk)
 		BEGIN
@@ -150,7 +150,7 @@ BEGIN
 			END IF;
 		END PROCESS assert_proc;
 	END GENERATE assert_gen;
-
+	-- synthesis translate_on
 
 	integral_proc : PROCESS (clk)
 	BEGIN
