@@ -93,7 +93,9 @@ ENTITY pi_controller IS
 		lpf_err 		: IN  std_logic_vector(ERR_W -1 DOWNTO 0);
 
 		lpf_adj_valid   : OUT std_logic;
-		lpf_adjust		: OUT std_logic_vector(NCO_W -1 DOWNTO 0)
+		lpf_adjust		: OUT std_logic_vector(NCO_W -1 DOWNTO 0);
+
+		lpf_accum 		: OUT std_logic_vector(ACC_W -1 DOWNTO 0)
 	);
 END ENTITY pi_controller;
 
@@ -180,6 +182,8 @@ BEGIN
 
 		END IF;
 	END PROCESS integral_proc;
+
+	lpf_accum <= std_logic_vector(i_acc);
 
 
 ------------------------------------------------------------------------------------------------------
