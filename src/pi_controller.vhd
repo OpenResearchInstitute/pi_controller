@@ -116,7 +116,7 @@ ARCHITECTURE rtl OF pi_controller IS
 	SIGNAL i_sat : signed(ACC_W -1 DOWNTO 0);
 	SIGNAL i_acc : signed(ACC_W -1 DOWNTO 0);
 	SIGNAL i_val : signed(NCO_W -1 DOWNTO 0);
-	SIGNAL p_val : signed(ERR_W -1 DOWNTO 0);
+	SIGNAL p_val : signed(NCO_W -1 DOWNTO 0);
 
 	SIGNAL lpf_err_valid_d  : std_logic;
 
@@ -201,7 +201,8 @@ BEGIN
 			IF enable = '1' THEN
 
 				IF lpf_err_valid = '1' THEN
-					p_val <= resize(shift_right(signed(lpf_p_gain) * signed(lpf_err), 4), ERR_W);
+					p_val <= resize(shift_right(signed(lpf_p_gain) * signed(lpf_err), 4), NCO_W);
+					--p_val <= signed(lpf_p_gain) * signed(lpf_err);
 				END IF;
 
 			END IF;
