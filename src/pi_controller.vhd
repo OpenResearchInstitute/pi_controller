@@ -164,7 +164,7 @@ BEGIN
 
 				IF lpf_err_valid = '1' AND lpf_freeze = '0' THEN
 					i_acc <= i_sat;
-					i_val <= resize(shift_right(i_acc * signed(lpf_i_gain), 8), NCO_W);
+					i_val <= resize(shift_right(i_acc * signed(lpf_i_gain), 14), NCO_W);
 				END IF;
 
 				IF lpf_zero = '1' OR init = '1' THEN
@@ -201,7 +201,7 @@ BEGIN
 			IF enable = '1' THEN
 
 				IF lpf_err_valid = '1' THEN
-					p_val <= resize(shift_right(signed(lpf_p_gain) * signed(lpf_err), 8), NCO_W);
+					p_val <= resize(shift_right(signed(lpf_p_gain) * signed(lpf_err), 14), NCO_W);
 					--p_val <= signed(lpf_p_gain) * signed(lpf_err);
 				END IF;
 
