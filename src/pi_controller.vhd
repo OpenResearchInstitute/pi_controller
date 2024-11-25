@@ -74,7 +74,8 @@ ENTITY pi_controller IS
 		NCO_W 			: NATURAL := 32;
 		ACC_W 			: NATURAL := 32;
 		ERR_W 			: NATURAL := 16;
-		GAIN_W  		: NATURAL := 16;
+		GAIN_W  		: NATURAL := 24;
+		SHIFT_W 		: NATURAL := 8;
 		INVERT_FADJ 	: BOOLEAN := False;
 		ASSERT_ENA 		: BOOLEAN := False
 	);
@@ -86,6 +87,8 @@ ENTITY pi_controller IS
 
 		lpf_p_gain 		: IN  std_logic_vector(GAIN_W -1 DOWNTO 0);
 		lpf_i_gain 		: IN  std_logic_vector(GAIN_W -1 DOWNTO 0);
+		lpf_p_shift 	: IN  std_logic_vector(SHIFT_W -1 DOWNTO 0);
+		lpf_i_shift 	: IN  std_logic_vector(SHIFT_W -1 DOWNTO 0);
 		lpf_freeze 	 	: IN  std_logic;
 		lpf_zero 		: IN  std_logic;	
 
@@ -164,7 +167,7 @@ BEGIN
 
 				IF lpf_err_valid = '1' AND lpf_freeze = '0' THEN
 					i_acc <= i_sat;
-					i_val <= resize(shift_right(i_acc * signed(lpf_i_gain), 14), NCO_W);
+					i_val <= resize(shift_right(i_acc * signed(lpf_i_gain), to_integer(unsigned(lpf_i_shift))), NCO_W);
 				END IF;
 
 				IF lpf_zero = '1' OR init = '1' THEN
@@ -201,7 +204,7 @@ BEGIN
 			IF enable = '1' THEN
 
 				IF lpf_err_valid = '1' THEN
-					p_val <= resize(shift_right(signed(lpf_p_gain) * signed(lpf_err), 14), NCO_W);
+					p_val <= resize(shift_right(signed(lpf_p_gain) * signed(lpf_err), to_integer(unsigned(lpf_p_shift))), NCO_W);
 					--p_val <= signed(lpf_p_gain) * signed(lpf_err);
 				END IF;
 
